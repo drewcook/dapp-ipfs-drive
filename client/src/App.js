@@ -1,14 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { FileIcon, defaultStyles } from 'react-file-icon'
 import { Table } from 'reactstrap'
-import './App.css'
 import IPFSDriveContract from './contracts/IPFSDrive.json'
 import getWeb3 from './getWeb3'
 import ipfsClient from './ipfsClient'
 import { format } from 'date-fns'
-import pull from 'pull-stream'
-import fileReader from 'pull-file-reader'
 
 const baseStyle = {
 	flex: 1,
@@ -40,9 +37,10 @@ const rejectStyle = {
 
 const App = () => {
 	const [web3, setWeb3] = useState(null)
-	const [accounts, setAccounts] = useState(null)
+	const [userAccount, setUserAccount] = useState(null)
 	const [contract, setContract] = useState(null)
 	const [drive, setDrive] = useState([])
+	const [ipfs, setIpfs] = useState(null)
 
 	useEffect(async () => {
 		try {
@@ -50,7 +48,7 @@ const App = () => {
 			const web3 = await getWeb3()
 
 			// Use web3 to get the user's accounts.
-			const accounts = await web3.eth.getAccounts()
+			const [initialAccount] = await web3.eth.getAccounts()
 
 			// Get the contract instance.
 			const networkId = await web3.eth.net.getId()
@@ -62,38 +60,72 @@ const App = () => {
 
 			// Set local state
 			setWeb3(web3)
-			setAccounts(accounts)
+			setUserAccount(initialAccount)
 			setContract(instance)
 
-			// Get files
-			getFiles()
-		} catch (error) {
+			// Connect to IPFS
+			await connectIpfsDaemon()
+
+			// Get files initially
+			await getFiles(instance, initialAccount)
+
+			// Listen for account changes
+			web3.currentProvider.on('accountsChanged', async ([newAccount]) => {
+				console.info('Switching wallet accounts')
+				setUserAccount(newAccount)
+				await getFiles(instance, newAccount)
+			})
+
+			// Listen for chain changes
+			web3.currentProvider.on('chainChanged', async chainId => {
+				console.info(`Switching wallet networks: Network ID ${chainId} is supported`)
+				await getFiles(instance, userAccount)
+			})
+		} catch (err) {
 			// Catch any errors for any of the above operations.
 			alert(`Failed to load web3, accounts, or contract. Check console for details.`)
-			console.error(error)
-		}
-	}, [])
-
-	// Dropzone
-	const onDrop = useCallback(async acceptedFiles => {
-		try {
-			// TODO: Support multiple with a for...of loop
-			const stream = pull(
-				fileReader(acceptedFiles[0]),
-				pull.collect((err, buffers) => {
-					let contents = Buffer.concat(buffers)
-					console.log(contents)
-				}),
-			)
-			ipfsClient.pin.add(stream).then(res => {
-				console.log(res)
-			})
-			debugger
-		} catch (err) {
 			console.error(err)
 		}
 	}, [])
 
+	/**
+	 * Connect to IPFS Node
+	 */
+	const connectIpfsDaemon = async () => {
+		try {
+			const node = ipfsClient
+			const isOnline = node.isOnline()
+
+			if (isOnline) {
+				setIpfs(node)
+			}
+		} catch (err) {
+			console.error(err)
+		}
+	}
+
+	/**
+	 * Gets files from smart contract
+	 * @param {IPFSDrive} contract - The IPFSDrive smart contract instance
+	 * @param {string} userAccount - The current connect account address
+	 */
+	const getFiles = async (contract, userAccount) => {
+		if (!contract) return
+		try {
+			const filesLen = await contract.methods.getLength().call({ from: userAccount })
+			const files = []
+			let file
+			for (let i = 0; i < filesLen; i++) {
+				file = await contract.methods.getFile(i).call({ from: userAccount })
+				files.push(file)
+			}
+			setDrive(files)
+		} catch (err) {
+			console.error(err)
+		}
+	}
+
+	// Dropzone
 	const {
 		getRootProps,
 		getInputProps,
@@ -102,44 +134,88 @@ const App = () => {
 		isDragAccept,
 		isDragReject,
 	} = useDropzone({
-		onDrop,
+		onDrop: async ([file]) => {
+			// Add file to IPFS and wrap it in a directory to keep the original filename
+			const fileDetails = {
+				path: file.name,
+				content: file,
+			}
+
+			const options = {
+				wrapWithDirectory: true,
+				progress: prog => console.info(`received: ${prog}`),
+			}
+
+			try {
+				// Add file to IPFS
+				const addedFile = await ipfs.add(fileDetails, options)
+
+				// Add file to smart contract
+				const hash = addedFile.cid.toString()
+				const filename = file.name
+				const filetype = file.name.substr(file.name.lastIndexOf('.') + 1)
+				const timestamp = Math.round(+new Date() / 1000)
+
+				await contract.methods
+					.add(hash, filename, filetype, timestamp)
+					.send({ from: userAccount, gas: 300000 })
+
+				// Get files after upload
+				getFiles()
+			} catch (err) {
+				console.error(err)
+			}
+		},
 		// Accept all file types
 	})
-
-	const style = useMemo(
+	const dropzoneStyles = useMemo(
 		() => ({
 			...baseStyle,
 			...(isFocused ? focusedStyle : {}),
 			...(isDragAccept ? acceptStyle : {}),
 			...(isDragReject ? rejectStyle : {}),
+			padding: '50px 20px',
 		}),
 		[isFocused, isDragAccept, isDragReject],
 	)
 
-	const getFiles = async () => {
-		if (!contract) return
-		try {
-			const filesLen = await contract.methods.getLength().call()
-			const files = []
-			let file
-			for (let i = 0; i < filesLen; i++) {
-				file = await contract.methods.getFile(i).call()
-				files.push(file)
-			}
-			setDrive(files)
-			console.log(filesLen)
-		} catch (err) {
-			console.error(err)
-		}
+	const renderFiles = () => {
+		return drive.length > 0 ? (
+			drive.map((file, idx) => {
+				const { 0: hash, 1: filename, 2: filetype, 3: timestamp } = file
+				return (
+					<tr key={`${idx}-${hash}`}>
+						<td>
+							<div className="w-75 m-auto">
+								<FileIcon extension={filetype} {...defaultStyles[filetype]} />
+							</div>
+						</td>
+						<td className="text-start">
+							<a href={`https://ipfs.io/ipfs/${hash}`}>{filename}</a>
+						</td>
+						<td className="text-end">{format(new Date(timestamp * 1000), 'M/dd/yyyy h:mm a')}</td>
+					</tr>
+				)
+			})
+		) : (
+			<tr>
+				<td colSpan={3}>
+					<small>
+						<em>Your drive is currently empty. Get started by uploading your first file.</em>
+					</small>
+				</td>
+			</tr>
+		)
 	}
 
 	if (!web3) return <div>Loading Web3, accounts, and contract...</div>
 
 	return (
-		<div className="App">
+		<div className="text-center">
 			<div className="container pt-5">
 				<h1 className="mb-4">IPFS Drive</h1>
-				<div {...getRootProps({ style })} className="mb-5">
+				<p className="lead">Upload your files to IPFS. Click on each file to view them.</p>
+				<div {...getRootProps({ style: dropzoneStyles })} className="mb-5">
 					<input {...getInputProps()} />
 					{isDragActive
 						? 'Drop the files here ...'
@@ -155,18 +231,17 @@ const App = () => {
 							<th className="text-end">Date</th>
 						</tr>
 					</thead>
-					<tbody>
-						<tr>
-							<th>
-								<div className="w-50 m-auto">
-									<FileIcon extension="docx" {...defaultStyles.docx} />
-								</div>
-							</th>
-							<th className="text-start">myFile.docx</th>
-							<th className="text-end">{format(Date.now(), 'M/dd/yyyy')}</th>
-						</tr>
-					</tbody>
+					<tbody>{renderFiles()}</tbody>
 				</Table>
+				<p className="copy">
+					<small>
+						&copy;2022{' '}
+						<a href="https://dco.dev" target="_blank">
+							dco.dev
+						</a>
+						&nbsp;| All Rights Reserved
+					</small>
+				</p>
 			</div>
 		</div>
 	)

@@ -11,3 +11,21 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+
+a {
+  text-decoration: none;
+  color: initial;
+}
+
+a:hover {
+  color: initial;
+  text-decoration: underline;
+}
+
+th, td {
+  vertical-align: middle;
+}
+
+.copy {
+  margin-top: 180px;
+}
