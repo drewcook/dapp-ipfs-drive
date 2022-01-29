@@ -1,5 +1,5 @@
-var SimpleStorage = artifacts.require("./SimpleStorage.sol");
+var IPFSDrive = artifacts.require('./IPFSDrive.sol')
 
-module.exports = function(deployer) {
-  deployer.deploy(SimpleStorage);
-};
+module.exports = function (deployer) {
+	deployer.deploy(IPFSDrive)
+}
