@@ -2,23 +2,28 @@
   "name": "dapp-ipfs-drive",
   "version": "1.0.0",
   "description": "This is a proof of concept of working with IPFS within a JavaScript web application.",
-  "scripts": {
-    "heroku-prebuild": "npm install --prefix client --production=false",
-    "heroku-postbuild": "npm run build --prefix client"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/drewcook/dapp-ipfs-drive.git"
   },
-  "keywords": ["truffle", "solidity", "web3", "smart contract", "react", "ipfs"],
+  "keywords": [
+    "truffle",
+    "solidity",
+    "web3",
+    "smart contract",
+    "react",
+    "ipfs"
+  ],
   "author": "Drew Cook",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/drewcook/dapp-ipfs-drive/issues"
   },
   "homepage": "https://github.com/drewcook/dapp-ipfs-drive#readme",
-	"engines": {
-		"node": "14.18.1",
-    "npm": "6.14.15"
-	}
+	"dependencies": {
+		"dotenv": "^10.0.0"
+	},
+  "devDependencies": {
+    "@truffle/hdwallet-provider": "^2.0.0"
+  }
 }

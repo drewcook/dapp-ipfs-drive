@@ -76,12 +76,6 @@ const App = () => {
 					setUserAccount(newAccount)
 					await getFiles(instance, newAccount)
 				})
-
-				// Listen for chain changes
-				web3.currentProvider.on('chainChanged', async chainId => {
-					console.info(`Switching wallet networks: Network ID ${chainId} is supported`)
-					await getFiles(instance, userAccount)
-				})
 			} catch (err) {
 				// Catch any errors for any of the above operations.
 				alert(`Failed to load web3, accounts, or contract. Check console for details.`)
@@ -90,6 +84,21 @@ const App = () => {
 		}
 		init()
 	}, [])
+
+	useEffect(() => {
+		const getAccountFiles = async () => {
+			try {
+				// Listen for chain changes
+				web3.currentProvider.on('chainChanged', async chainId => {
+					console.info(`Switching wallet networks: Network ID ${chainId} is supported`)
+					await getFiles(instance, userAccount)
+				})
+			} catch (err) {
+				console.error(err)
+			}
+		}
+		getAccountFiles()
+	}, [userAccount])
 
 	/**
 	 * Connect to IPFS Node
@@ -238,10 +247,7 @@ const App = () => {
 				</Table>
 				<p className="copy">
 					<small>
-						&copy;2022{' '}
-						<a href="https://dco.dev" target="_blank">
-							dco.dev
-						</a>
+						&copy;2022 <a href="https://dco.dev">dco.dev</a>
 						&nbsp;| All Rights Reserved
 					</small>
 				</p>

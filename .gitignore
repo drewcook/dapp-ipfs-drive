@@ -1,0 +1,11 @@
+.vscode
+
+# Dependencies
+node_modules
+hoscdev
+
+# Local environment variables
+.env
+
+# OS
+.DS_Store
