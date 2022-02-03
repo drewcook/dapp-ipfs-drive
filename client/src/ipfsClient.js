@@ -1,8 +1,8 @@
 import { create } from 'ipfs-http-client'
 
-const projectId = process.env.REACT_APP_INFURA_IPFS_PROJECT_ID
-const projectSecret = process.env.REACT_APP_INFURA_IPFS_PROJECT_SECRET
-const auth = 'Basic ' + Buffer.from(projectId + ':' + projectSecret).toString('base64')
+const bearerToken =
+	'Basic ' +
+	Buffer.from('24cRpeTV3Od57ZmO3KBfPuKy5XJ:114e178af52a89aeaf56765beac8ec8e').toString('base64')
 
 // Development (Local)
 const localNode = '/ip4/127.0.0.1/tcp/5001'
@@ -13,12 +13,12 @@ const infuraNode = {
 	port: 5001,
 	protocol: 'https',
 	headers: {
-		authorization: auth,
+		authorization: bearerToken,
 	},
+	apiPath: '/api/v0',
 }
 
 const ipfsClientConfig = process.env.NODE_ENV === 'production' ? infuraNode : localNode
-console.log({ ipfsClientConfig, projectId, projectSecret }, process.env)
 const ipfsClient = create(ipfsClientConfig)
 
 export default ipfsClient
