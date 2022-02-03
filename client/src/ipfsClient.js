@@ -15,10 +15,10 @@ const infuraNode = {
 	headers: {
 		authorization: bearerToken,
 	},
-	apiPath: '/api/v0',
 }
 
 const ipfsClientConfig = process.env.NODE_ENV === 'production' ? infuraNode : localNode
+console.log(bearerToken)
 const ipfsClient = create(ipfsClientConfig)
 
 export default ipfsClient
