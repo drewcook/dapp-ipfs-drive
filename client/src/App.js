@@ -42,50 +42,53 @@ const App = () => {
 	const [drive, setDrive] = useState([])
 	const [ipfs, setIpfs] = useState(null)
 
-	useEffect(async () => {
-		try {
-			// Get network provider and web3 instance.
-			const web3 = await getWeb3()
+	useEffect(() => {
+		const init = async () => {
+			try {
+				// Get network provider and web3 instance.
+				const web3 = await getWeb3()
 
-			// Use web3 to get the user's accounts.
-			const [initialAccount] = await web3.eth.getAccounts()
+				// Use web3 to get the user's accounts.
+				const [initialAccount] = await web3.eth.getAccounts()
 
-			// Get the contract instance.
-			const networkId = await web3.eth.net.getId()
-			const deployedNetwork = IPFSDriveContract.networks[networkId]
-			const instance = new web3.eth.Contract(
-				IPFSDriveContract.abi,
-				deployedNetwork && deployedNetwork.address,
-			)
+				// Get the contract instance.
+				const networkId = await web3.eth.net.getId()
+				const deployedNetwork = IPFSDriveContract.networks[networkId]
+				const instance = new web3.eth.Contract(
+					IPFSDriveContract.abi,
+					deployedNetwork && deployedNetwork.address,
+				)
 
-			// Set local state
-			setWeb3(web3)
-			setUserAccount(initialAccount)
-			setContract(instance)
+				// Set local state
+				setWeb3(web3)
+				setUserAccount(initialAccount)
+				setContract(instance)
 
-			// Connect to IPFS
-			await connectIpfsDaemon()
+				// Connect to IPFS
+				await connectIpfsDaemon()
 
-			// Get files initially
-			await getFiles(instance, initialAccount)
+				// Get files initially
+				await getFiles(instance, initialAccount)
 
-			// Listen for account changes
-			web3.currentProvider.on('accountsChanged', async ([newAccount]) => {
-				console.info('Switching wallet accounts')
-				setUserAccount(newAccount)
-				await getFiles(instance, newAccount)
-			})
+				// Listen for account changes
+				web3.currentProvider.on('accountsChanged', async ([newAccount]) => {
+					console.info('Switching wallet accounts')
+					setUserAccount(newAccount)
+					await getFiles(instance, newAccount)
+				})
 
-			// Listen for chain changes
-			web3.currentProvider.on('chainChanged', async chainId => {
-				console.info(`Switching wallet networks: Network ID ${chainId} is supported`)
-				await getFiles(instance, userAccount)
-			})
-		} catch (err) {
-			// Catch any errors for any of the above operations.
-			alert(`Failed to load web3, accounts, or contract. Check console for details.`)
-			console.error(err)
+				// Listen for chain changes
+				web3.currentProvider.on('chainChanged', async chainId => {
+					console.info(`Switching wallet networks: Network ID ${chainId} is supported`)
+					await getFiles(instance, userAccount)
+				})
+			} catch (err) {
+				// Catch any errors for any of the above operations.
+				alert(`Failed to load web3, accounts, or contract. Check console for details.`)
+				console.error(err)
+			}
 		}
+		init()
 	}, [])
 
 	/**
