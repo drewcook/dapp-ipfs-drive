@@ -24,6 +24,6 @@
 		"dotenv": "^10.0.0"
 	},
   "devDependencies": {
-    "@truffle/hdwallet-provider": "^2.0.0"
+    "@truffle/hdwallet-provider": "2.0.0"
   }
 }
