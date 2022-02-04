@@ -170,7 +170,7 @@ const App = () => {
 					.send({ from: userAccount, gas: 300000 })
 
 				// Get files after upload
-				getFiles()
+				getFiles(contract, userAccount)
 			} catch (err) {
 				console.error(err)
 			}
