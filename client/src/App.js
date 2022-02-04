@@ -80,6 +80,12 @@ const App = () => {
 				// Listen for chain changes
 				web3.currentProvider.on('chainChanged', async chainId => {
 					console.info(`Switching wallet networks: Network ID ${chainId} is supported`)
+					const deployedNetwork = IPFSDriveContract.networks[chainId]
+					const instance = new web3.eth.Contract(
+						IPFSDriveContract.abi,
+						deployedNetwork && deployedNetwork.address,
+					)
+					setContract(instance)
 					await getFiles(instance, userAccount)
 				})
 			} catch (err) {
