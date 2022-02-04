@@ -152,7 +152,7 @@ const App = () => {
 
 			const options = {
 				wrapWithDirectory: true,
-				progress: prog => console.info(`received: ${prog}`),
+				progress: prog => console.info(`Polling: ${prog}`),
 			}
 
 			try {
@@ -171,6 +171,7 @@ const App = () => {
 
 				// Get files after upload
 				getFiles(contract, userAccount)
+				alert('File(s) successfully uploaded to IPFS.')
 			} catch (err) {
 				console.error(err)
 			}
