@@ -80,7 +80,7 @@ const App = () => {
 				// Listen for chain changes
 				web3.currentProvider.on('chainChanged', async chainId => {
 					console.info(`Switching wallet networks: Network ID ${chainId} is supported`)
-					await getFiles(instance, userAccount)
+					window.location.reload()
 				})
 			} catch (err) {
 				// Catch any errors for any of the above operations.
