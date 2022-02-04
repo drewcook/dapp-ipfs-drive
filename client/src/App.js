@@ -85,7 +85,6 @@ const App = () => {
 						IPFSDriveContract.abi,
 						deployedNetwork && deployedNetwork.address,
 					)
-					setContract(instance)
 					await getFiles(instance, userAccount)
 				})
 			} catch (err) {
