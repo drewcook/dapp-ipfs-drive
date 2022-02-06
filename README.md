@@ -2,6 +2,8 @@
 
 View the live [demo](https://drive.dco.dev).
 
+![IPFS Drive Screenshot](./screenshot.png)
+
 This application is a Web3 product that allows users to upload their files to [IPFS](https://ipfs.io/) and view them in a dashboard, very similar to Google Drive. However, this application is decentralized and allows users to interact with Web3.
 
 This is a very simple product aimed to deliver a proof of concept for uploading and viewing files within IPFS in a web application built with JavaScript.
